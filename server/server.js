@@ -913,6 +913,8 @@ app.get('/api/campaigns/:id/donors', (req, res) => {
   res.json(donors)
 })
 
+export default app
+
 const PORT = 5000
 app.listen(PORT, () => {
   console.log('🚀 Server: http://localhost:' + PORT)
