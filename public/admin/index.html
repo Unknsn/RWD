@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    input, button { padding: 0.5rem; margin-right: 0.5rem; }
+    pre { background: #f5f5f5; padding: 1rem; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <label>Admin Token
+    <input id="token" type="password" placeholder="Set ADMIN_TOKEN on server">
+  </label>
+  <button id="health">Check Health</button>
+  <button id="stats">Get Stats</button>
+  <button id="invalidate">Invalidate Cache</button>
+  <pre id="out"></pre>
+
+  <h2>Feature Flags</h2>
+  <div>
+    <button id="getFlags">Get Flags</button>
+    <input id="flagKey" placeholder="flag key">
+    <input id="flagValue" placeholder="flag value">
+    <button id="setFlag">Set Flag</button>
+  </div>
+
+  <h2>Jobs</h2>
+  <div>
+    <input id="jobInterval" type="number" placeholder="interval ms (optional)">
+    <button id="startJob">Start Job</button>
+    <button id="stopJob">Stop Job</button>
+    <button id="jobStatus">Job Status</button>
+  </div>
+
+  <h2>Env</h2>
+  <div>
+    <button id="env">Show Env</button>
+  </div>
+
+  <script>
+    const out = document.getElementById('out');
+    const tokenInput = document.getElementById('token');
+
+    async function call(path, method = 'GET') {
+      out.textContent = 'Loading...';
+      const res = await fetch(path, {
+        method,
+        headers: { 'x-admin-token': tokenInput.value }
+      });
+      const text = await res.text();
+      out.textContent = text;
+    }
+
+    document.getElementById('health').onclick = () => call('/admin/health');
+    document.getElementById('stats').onclick = () => call('/admin/stats');
+    document.getElementById('invalidate').onclick = () => call('/admin/invalidate-cache', 'POST');
+    document.getElementById('getFlags').onclick = () => call('/admin/flags');
+    document.getElementById('setFlag').onclick = async () => {
+      const key = document.getElementById('flagKey').value;
+      const value = document.getElementById('flagValue').value;
+      out.textContent = 'Loading...';
+      const res = await fetch(`/admin/flags/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        headers: {
+          'x-admin-token': tokenInput.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ value })
+      });
+      out.textContent = await res.text();
+    };
+
+    document.getElementById('startJob').onclick = async () => {
+      const ms = parseInt(document.getElementById('jobInterval').value, 10);
+      out.textContent = 'Loading...';
+      const res = await fetch('/admin/jobs/start', {
+        method: 'POST',
+        headers: {
+          'x-admin-token': tokenInput.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ intervalMs: Number.isFinite(ms) ? ms : undefined })
+      });
+      out.textContent = await res.text();
+    };
+    document.getElementById('stopJob').onclick = () => call('/admin/jobs/stop', 'POST');
+    document.getElementById('jobStatus').onclick = () => call('/admin/jobs/status');
+    document.getElementById('env').onclick = () => call('/admin/env');
+  </script>
+</body>
+</html>
